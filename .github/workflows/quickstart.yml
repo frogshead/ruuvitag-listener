@@ -42,9 +42,6 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install ARM targets 
-        uses: actions-rs/toolchain@v1  
-
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
