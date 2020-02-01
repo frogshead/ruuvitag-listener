@@ -9,7 +9,8 @@ use std::time::SystemTime;
 use structopt::StructOpt;
 
 use crate::ruuvi_sensor_protocol::{
-    Acceleration, BatteryPotential, Humidity, Pressure, Temperature, TransmitterPower, MovementCounter, MeasurementSequenceNumber
+    Acceleration, BatteryPotential, Humidity, MeasurementSequenceNumber, MovementCounter, Pressure,
+    Temperature, TransmitterPower,
 };
 pub mod ruuvi;
 use ruuvi::{on_measurement, Measurement};
@@ -92,7 +93,6 @@ fn field_set(measurement: &Measurement) -> BTreeMap<String, FieldValue> {
         1.0
     );
 
-
     if let Some(ref acceleration) = measurement.sensor_values.acceleration_vector_as_milli_g() {
         fields.insert(
             "acceleration_x".to_string(),
@@ -166,7 +166,7 @@ struct Options {
     verbose: bool,
 }
 
-fn   print_result(aliases: &BTreeMap<String, String>, name: &str, measurement: Measurement) {
+fn print_result(aliases: &BTreeMap<String, String>, name: &str, measurement: Measurement) {
     match writeln!(
         std::io::stdout(),
         "{}",
