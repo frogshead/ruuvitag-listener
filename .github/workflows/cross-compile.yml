@@ -26,3 +26,8 @@ jobs:
           use-cross: true
           command: build
           args: --release --target=${{ matrix.target }}
+      - name: create target executable
+          uses: actions/upload-artifact@v1 
+          with: 
+            name: ${{ matrix.target }}
+            path: ./target/release/ruuvitag-listener
