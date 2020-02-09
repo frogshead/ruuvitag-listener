@@ -25,7 +25,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --release --target=${{ matrix.target }}  --target-dir=./out/
+          args: --release --target=${{ matrix.target }}
       - uses: actions/upload-artifact@v1  
         with: 
           name: ${{ matrix.target }}
