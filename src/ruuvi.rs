@@ -1,10 +1,9 @@
-use rumble::api::{BDAddr, Central, CentralEvent, Peripheral};
-use rumble::bluez::adapter::ConnectedAdapter;
-use rumble::bluez::manager::Manager;
+use btleplug::api::{BDAddr, Central, CentralEvent, Peripheral};
+use btleplug::bluez::adapter::ConnectedAdapter;
+use btleplug::bluez::manager::Manager;
 use ruuvi_sensor_protocol::{ParseError, SensorValues};
 use std::eprintln;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 
 // Measurement from RuuviTag sensor
@@ -15,11 +14,11 @@ pub struct Measurement {
 }
 
 trait ToSensorValue {
-    fn to_sensor_value(self: Self) -> Result<SensorValues, ParseError>;
+    fn to_sensor_value(self) -> Result<SensorValues, ParseError>;
 }
 
 impl<T: Peripheral> ToSensorValue for T {
-    fn to_sensor_value(self: Self) -> Result<SensorValues, ParseError> {
+    fn to_sensor_value(self) -> Result<SensorValues, ParseError> {
         match self.properties().manufacturer_data {
             Some(data) => from_manufacturer_data(&data),
             None => Err(ParseError::EmptyValue),
@@ -71,13 +70,16 @@ fn on_event(
 // Stream of RuuviTag measurements that gets passed to the given callback. Blocks and never stops.
 pub fn on_measurement(
     f: Box<dyn Fn(Result<Measurement, ParseError>) + Send>,
-) -> Result<(), rumble::Error> {
+) -> Result<(), btleplug::Error> {
     let manager = Manager::new()?;
 
     // get bluetooth adapter
     let adapters = manager.adapters()?;
 
-    let mut adapter = adapters.into_iter().nth(0).unwrap();
+    let mut adapter = adapters
+        .into_iter()
+        .next()
+        .expect("Bluetooth adapter not available");
 
     // clear out any errant state
     adapter = manager.down(&adapter)?;
@@ -89,18 +91,15 @@ pub fn on_measurement(
     central.filter_duplicates(false);
 
     let closure_central = central.clone();
-    let on_event_closure = Box::new(move |event| {
-        if let Some(result) = on_event(&closure_central, event) {
-            f(result)
-        }
-    });
-    central.on_event(on_event_closure);
+    let event_receiver = central.event_receiver().unwrap();
 
-    // scan for tags, reset after 60 seconds
     loop {
-        central.start_scan()?;
-        thread::sleep(Duration::from_secs(60));
-
+        central.start_scan().unwrap();
+        while let Ok(event) = event_receiver.recv_timeout(Duration::from_secs(60)) {
+            if let Some(result) = on_event(&closure_central, event) {
+                f(result)
+            }
+        }
         central.stop_scan()?;
     }
 }

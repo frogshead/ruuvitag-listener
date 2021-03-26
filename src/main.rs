@@ -1,4 +1,4 @@
-extern crate rumble;
+extern crate btleplug;
 extern crate ruuvi_sensor_protocol;
 extern crate structopt;
 
@@ -18,7 +18,7 @@ use ruuvi::{on_measurement, Measurement};
 pub mod influxdb;
 use influxdb::{DataPoint, FieldValue};
 
-use rumble::Error::PermissionDenied;
+use btleplug::Error::PermissionDenied;
 
 fn tag_set(
     aliases: &BTreeMap<String, String>,
@@ -90,6 +90,27 @@ fn field_set(measurement: &Measurement) -> BTreeMap<String, FieldValue> {
         fields,
         measurement.sensor_values.measurement_sequence_number(),
         "measurement_number",
+        1.0
+    );
+
+    add_value!(
+        fields,
+        measurement.sensor_values.tx_power_as_dbm(),
+        "tx_power",
+        1.0
+    );
+
+    add_value!(
+        fields,
+        measurement.sensor_values.movement_counter(),
+        "movement_counter",
+        1.0
+    );
+
+    add_value!(
+        fields,
+        measurement.sensor_values.measurement_sequence_number(),
+        "measurement_sequence_number",
         1.0
     );
 
@@ -180,7 +201,7 @@ fn print_result(aliases: &BTreeMap<String, String>, name: &str, measurement: Mea
     }
 }
 
-fn listen(options: Options) -> Result<(), rumble::Error> {
+fn listen(options: Options) -> Result<(), btleplug::Error> {
     let name = options.influxdb_measurement;
     let aliases = alias_map(&options.alias);
     let verbose = options.verbose;
